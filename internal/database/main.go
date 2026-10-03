@@ -13,7 +13,7 @@ func ConnectDB() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	db.AutoMigrate(&Station{})
+	db.AutoMigrate(&Station{}, &TrainSnapshot{})
 
 	return db, nil
 }
