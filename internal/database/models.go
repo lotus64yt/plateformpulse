@@ -1,19 +1,24 @@
 package database
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/datatypes"
+)
 
 type StationUID string
 
 type Station struct {
-	UID  StationUID
-	Name string
+	UID   StationUID
+	Name  string
+	Lines datatypes.JSON `gorm:"type:text"`
 }
 
 type TrainSnapshot struct {
 	Id                    string
 	Line                  string
 	TrainNumber           string
-	DerpartureStation     StationUID
+	DepartureStation      StationUID
 	ArrivalStation        StationUID
 	ScheduledDeparture    time.Time
 	ActualDeparture       time.Time

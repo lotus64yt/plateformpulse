@@ -4,106 +4,127 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"plateformpulse/internal/database"
 	"plateformpulse/utils"
 	"time"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-type APIResponse struct {
-	TotalCount int             `json:"total_count"`
-	Results    []StationRecord `json:"results"`
-}
-
-type GeoPoint struct {
-	Lat float64 `json:"lat"`
-	Lon float64 `json:"lon"`
-}
-
 type StationRecord struct {
-	ID                   string    `json:"id"`
-	Nom                  string    `json:"nom"`
-	LibelleCourt         string    `json:"libellecourt"`
-	CodesUIC             string    `json:"codes_uic"`
-	Commune              string    `json:"commune"`
-	Departement          string    `json:"departement"`
-	PositionGeographique *GeoPoint `json:"position_geographique"`
+	RouteID        string `json:"id"`
+	RouteShortName string `json:"shortname"`
+	RouteLongName  string `json:"route_long_name"`
+	StopID         string `json:"stop_id"`
+	StopName       string `json:"stop_name"`
+	OperatorName   string `json:"operatorname"`
+	Mode           string `json:"mode"`
 }
 
 func main() {
-	fmt.Println("test")
 	db, err := database.ConnectDB()
 	if err != nil {
 		fmt.Printf("Connection db error : %s", err)
 		return
 	}
-	db.Exec("TRUNCATE TABLE stations")
+	db.Logger = db.Logger.LogMode(logger.Silent)
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&database.Station{})
 
-	endpoint := "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/gares-de-voyageurs/records"
+	endpoint := "https://data.iledefrance-mobilites.fr/api/explore/v2.1/catalog/datasets/arrets-lignes/exports/json?lang=fr&timezone=Europe%2FBerlin"
+	client := &http.Client{Timeout: 45 * time.Second}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(endpoint)
+	if err != nil {
+		fmt.Println("Error fetching api:", err)
+		return
+	}
+	defer resp.Body.Close()
 
-	offset := 0
-	total := -1
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("Error api status %d", resp.StatusCode)
+		return
+	}
+
+	var records []StationRecord
+	if err := json.NewDecoder(resp.Body).Decode(&records); err != nil {
+		fmt.Printf("Error api decode: %v\n", err)
+		return
+	}
+
 	processed := 0
+	for i, record := range records {
+		lineIdentifier := record.RouteID
+		if lineIdentifier == "" {
+			lineIdentifier = record.RouteShortName
+		}
 
-	for {
-		u, _ := url.Parse(endpoint)
-		q := u.Query()
-		q.Set("limit", fmt.Sprintf("%d", 20))
-		q.Set("offset", fmt.Sprintf("%d", offset))
-		u.RawQuery = q.Encode()
-
-		resp, err := client.Get(u.String())
-		if err != nil {
-			fmt.Println("Error fetching api")
+		if record.StopID == "" || lineIdentifier == "" {
 			continue
 		}
 
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			fmt.Printf("Error api status %d", resp.StatusCode)
-			break
+		isRail := false
+		switch record.Mode {
+		case "Metro", "RapidTransit", "LocalTrain", "Tramway", "RailShuttle", "regionalRail", "Funicular":
+			isRail = true
 		}
 
-		var apiResp APIResponse
-		if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-			resp.Body.Close()
-			fmt.Printf("Error api decode %v", err)
-			break
-		}
-		resp.Body.Close()
-
-		total = apiResp.TotalCount
-
-		if len(apiResp.Results) == 0 {
-			break
+		if !isRail {
+			continue
 		}
 
-		for _, record := range apiResp.Results {
-			normalizeName := utils.StationNameNormalize(record.Nom)
-			station := database.Station{
-				Name: normalizeName,
-				UID:  database.StationUID(record.ID),
-			}
-			SaveStation(db, station)
+		normalizeName := utils.StationNameNormalize(record.StopName)
 
-			processed++
-			percent := float64(processed) / float64(total) * 100
-			fmt.Printf("%.2f%%\n", percent)
+		initialLines, _ := json.Marshal([]string{lineIdentifier})
+
+		station := database.Station{
+			Name:  normalizeName,
+			UID:   database.StationUID(record.StopID),
+			Lines: datatypes.JSON(initialLines),
 		}
+		SaveStation(db, station)
+		processed++
 
-		offset += 20
-		if offset >= total {
-			break
+		if (i+1)%100 == 0 {
+			percent := float64(i+1) / float64(len(records)) * 100
+			fmt.Printf("%.2f%%", percent)
 		}
 	}
-
-	fmt.Printf("Fetch %d station", total)
 }
 
 func SaveStation(db *gorm.DB, station database.Station) {
-	db.Create(&station)
+	var existing database.Station
+
+	result := db.Where("uid = ?", station.UID).First(&existing)
+
+	if result.Error != nil {
+		db.Create(&station)
+	} else {
+		var existingLines []string
+		_ = json.Unmarshal(existing.Lines, &existingLines)
+
+		var newLines []string
+		_ = json.Unmarshal(station.Lines, &newLines)
+
+		if len(newLines) == 0 {
+			return
+		}
+		newLine := newLines[0]
+
+		found := false
+		for _, line := range existingLines {
+			if line == newLine {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			existingLines = append(existingLines, newLine)
+			updatedJSON, _ := json.Marshal(existingLines)
+			existing.Lines = datatypes.JSON(updatedJSON)
+			db.Save(&existing)
+		}
+	}
 }
