@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"plateformpulse/internal/database"
 	"plateformpulse/utils"
+	"strings"
 	"time"
 
 	"gorm.io/datatypes"
@@ -76,11 +77,13 @@ func main() {
 
 		normalizeName := utils.StationNameNormalize(record.StopName)
 
+		lineIdentifier = strings.TrimPrefix(lineIdentifier, "IDFM:")
+
 		initialLines, _ := json.Marshal([]string{lineIdentifier})
 
 		station := database.Station{
 			Name:  normalizeName,
-			UID:   database.StationUID(record.StopID),
+			UID:   database.StationUID(utils.ExtractShortID(record.StopID)),
 			Lines: datatypes.JSON(initialLines),
 		}
 		SaveStation(db, station)
