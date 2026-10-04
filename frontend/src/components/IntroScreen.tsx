@@ -1,6 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
+import ContinueButton from "./ContinueButton";
+
+const AnimatedContinueButton = motion(ContinueButton);
 
 interface IntroScreenProps {
   onContinue: () => void;
@@ -30,15 +33,13 @@ export default function IntroScreen({ onContinue }: IntroScreenProps) {
         </p>
       </motion.div>
 
-      <motion.button
+      <AnimatedContinueButton
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 0.8 }}
+        transition={{ delay: 2, duration: 0.8 }}
         onClick={onContinue}
-        className="mt-16 px-10 py-4 text-lg md:text-xl bg-white text-black font-semibold rounded-full hover:bg-gray-200 transition-colors"
-      >
-        Continue
-      </motion.button>
+        text="Continue"
+      />
     </motion.div>
   );
 }
