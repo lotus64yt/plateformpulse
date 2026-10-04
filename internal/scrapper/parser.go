@@ -12,7 +12,7 @@ func ParseSiriResponse(resp SiriResponse) []database.TrainSnapshot {
 	for _, delivery := range resp.Siri.ServiceDelivery.EstimatedTimetableDelivery {
 		for _, frame := range delivery.EstimatedJourneyVersionFrame {
 			for _, journey := range frame.EstimatedVehicleJourney {
-				if len(journey.EstimatedCalls.EstimatedCall) < 2 || len(journey.VehicleMode) != 1 || journey.VehicleMode[0] != "RAIL" {
+				if len(journey.EstimatedCalls.EstimatedCall) < 2 || len(journey.VehicleMode) != 1 || (journey.VehicleMode[0] != "RAIL" && journey.VehicleMode[0] != "METRO") {
 					continue
 				}
 
@@ -35,7 +35,7 @@ func ParseSiriResponse(resp SiriResponse) []database.TrainSnapshot {
 				if actualDep.IsZero() {
 					actualDep = scheduledDep
 				}
-				
+
 				scheduledArr, _ := time.Parse(time.RFC3339, lastCall.AimedArrivalTime)
 				actualArr, _ := time.Parse(time.RFC3339, lastCall.ExpectedArrivalTime)
 				if actualArr.IsZero() {
@@ -61,8 +61,8 @@ func ParseSiriResponse(resp SiriResponse) []database.TrainSnapshot {
 					Id:                    trainNum + "-" + scheduledDep.Format("20060102150405"),
 					Line:                  lineName,
 					TrainNumber:           trainNum,
-					DepartureStationID:    database.StationUID(depShort),
-					ArrivalStationID:      database.StationUID(arrShort),
+					DepartureStationID:    depShort,
+					ArrivalStationID:      arrShort,
 					ScheduledDeparture:    scheduledDep,
 					ActualDeparture:       actualDep,
 					DepartureDelayMinutes: depDelay,
