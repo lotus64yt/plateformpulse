@@ -9,8 +9,8 @@ backend:
 	cd backend && go run main.go
 
 frontend:
-	cd frontend && npm run dev
+	cd frontend && pnpm run dev
 
 install:
 	cd backend && go mod tidy
-	cd frontend && npm install
+	cd frontend && pnpm install
