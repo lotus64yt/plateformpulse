@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"plateformpulse/internal/api"
 	"plateformpulse/internal/database"
 	"plateformpulse/internal/scrapper"
 )
@@ -13,5 +14,7 @@ func main() {
 		return
 	}
 
-	scrapper.NewScrapper(db)
+	go scrapper.NewScrapper(db)
+	go api.StartApi(db)
+	select {}
 }
