@@ -1,15 +1,30 @@
 "use client";
 
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import NextStationSelector from "@/components/NextStationSelector";
-import { Station } from "@/types/station";
-import { useEffect, useState } from "react";
+import IntroScreen from "@/components/IntroScreen";
 
 export default function Home() {
+  const [showIntro, setShowIntro] = useState(true);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-900 font-sans">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center py-32 px-16">
-        <NextStationSelector />
-      </main>
+    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-900 font-sans min-h-screen">
+      <AnimatePresence mode="wait">
+        {showIntro ? (
+          <IntroScreen onContinue={() => setShowIntro(false)} />
+        ) : (
+          <motion.main
+            key="main"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="flex flex-1 w-full max-w-3xl flex-col items-center py-32 px-16"
+          >
+            <NextStationSelector />
+          </motion.main>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
