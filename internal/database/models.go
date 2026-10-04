@@ -6,22 +6,19 @@ import (
 	"gorm.io/datatypes"
 )
 
-type StationUID string
-
 type Station struct {
-	UID   StationUID     `gorm:"primaryKey;type:text"`
-	Name  string
+	Name  string         `gorm:"primaryKey;type:text"`
+	UIDs  datatypes.JSON `gorm:"type:text"`
 	Lines datatypes.JSON `gorm:"type:text"`
+	Routes datatypes.JSON `gorm:"type:text"`
 }
 
 type TrainSnapshot struct {
-	Id                    string     `gorm:"primaryKey"`
+	Id                    string `gorm:"primaryKey"`
 	Line                  string
 	TrainNumber           string
-	DepartureStationID    StationUID
-	DepartureStation      Station    `gorm:"foreignKey:DepartureStationID;references:UID"`
-	ArrivalStationID      StationUID
-	ArrivalStation        Station    `gorm:"foreignKey:ArrivalStationID;references:UID"`
+	DepartureStationID    string
+	ArrivalStationID      string
 	ScheduledDeparture    time.Time
 	ActualDeparture       time.Time
 	DepartureDelayMinutes int
