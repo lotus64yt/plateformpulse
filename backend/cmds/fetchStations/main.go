@@ -82,8 +82,10 @@ func main() {
 	}
 	rc.Close()
 
-	fmt.Println("stops")
-	stopNames := make(map[string]string)
+	stopToParent := make(map[string]string)
+	parentToName := make(map[string]string)
+	stopToName := make(map[string]string)
+
 	rc, _ = fileStops.Open()
 	csvR = csv.NewReader(rc)
 	csvR.Read()
@@ -95,7 +97,18 @@ func main() {
 		if err != nil {
 			continue
 		}
-		stopNames[record[0]] = utils.StationNameNormalize(record[2])
+		stopID := record[0]
+		stopName := record[2]
+		locationType := record[8]
+		parentStation := record[9]
+
+		if locationType == "1" {
+			parentToName[stopID] = utils.StationNameNormalize(stopName)
+		}
+		if parentStation != "" {
+			stopToParent[stopID] = parentStation
+		}
+		stopToName[stopID] = utils.StationNameNormalize(stopName)
 	}
 	rc.Close()
 
@@ -158,8 +171,16 @@ func main() {
 			continue
 		}
 
-		name, ok := stopNames[stopID]
-		if !ok {
+		name := ""
+		if parentID, hasParent := stopToParent[stopID]; hasParent {
+			if pName, hasPName := parentToName[parentID]; hasPName {
+				name = pName
+			}
+		}
+		if name == "" {
+			name = stopToName[stopID]
+		}
+		if name == "" {
 			continue
 		}
 

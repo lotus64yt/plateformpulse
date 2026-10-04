@@ -10,7 +10,7 @@ type Station struct {
 	Name  string         `gorm:"primaryKey;type:text"`
 	UIDs  datatypes.JSON `gorm:"type:text"`
 	Lines datatypes.JSON `gorm:"type:text"`
-	Routes datatypes.JSON `gorm:"type:text"`
+	Routes datatypes.JSON `gorm:"type:text" json:"-"`
 }
 
 type TrainSnapshot struct {
