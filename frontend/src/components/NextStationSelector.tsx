@@ -228,7 +228,7 @@ export default function NextStationSelector() {
             : null}
         </div>
       ))}
-      {JSON.stringify(validTrip)}
+
       <ContinueButton
         onClick={() => {}}
         disabled={

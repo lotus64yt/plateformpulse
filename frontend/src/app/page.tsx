@@ -16,9 +16,9 @@ export default function Home() {
         ) : (
           <motion.main
             key="main"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
             className="flex flex-1 w-full max-w-3xl flex-col items-center py-32 px-16"
           >
             <NextStationSelector />
