@@ -1,6 +1,6 @@
 import { Station } from "@/types/station";
 import { cn } from "@/utils/lib";
-import { PlusIcon } from "@radix-ui/react-icons";
+import { Cross1Icon, PlusIcon } from "@radix-ui/react-icons";
 import { useEffect, useState } from "react";
 import ContinueButton from "./ContinueButton";
 import { Line } from "@/types/line";
@@ -44,7 +44,11 @@ export default function NextStationSelector() {
           to: trip[index + 1].UIDs[0],
           via: connexions[0],
         });
-      } else if (station.ChosenVia != null && connexions && connexions.length > station.ChosenVia) {
+      } else if (
+        station.ChosenVia != null &&
+        connexions &&
+        connexions.length > station.ChosenVia
+      ) {
         vTrip.push({
           from: station.UIDs[0],
           to: trip[index + 1].UIDs[0],
@@ -102,7 +106,7 @@ export default function NextStationSelector() {
 
     if (trip) {
       setValidTrip(toValidTrip(trip.filter((s): s is Station => s !== null)));
-      
+
       const url = new URL(window.location.href);
       if (trip.length === 1 && trip[0] === null) {
         if (url.searchParams.has("trip")) {
@@ -126,7 +130,7 @@ export default function NextStationSelector() {
       </h1>
       {trip.map((station, index) => (
         <div
-          key={(station?.UIDs[0] || "")+index}
+          key={(station?.UIDs[0] || "") + index}
           className="relative w-[90%]"
         >
           <div
@@ -159,6 +163,16 @@ export default function NextStationSelector() {
                     ))}
                   </div>
                 </div>
+                <div className="ml-auto h-[80%]">
+                  <Cross1Icon
+                    onClick={() => {
+                      const nTrip = trip.slice(0, index);
+                      nTrip.push(null);
+                      setTrip(nTrip);
+                    }}
+                    className="cursor-pointer"
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -190,7 +204,7 @@ export default function NextStationSelector() {
                         onClick={() => {
                           setTrip((currentTrip) => {
                             const newTrip = [...currentTrip];
-                            
+
                             const replacedIndex = currentTrip.length - 1;
                             newTrip[replacedIndex] = s;
                             newTrip.push(null);
@@ -198,10 +212,13 @@ export default function NextStationSelector() {
                             if (replacedIndex > 0) {
                               const prevStation = newTrip[replacedIndex - 1];
                               if (prevStation) {
-                                newTrip[replacedIndex - 1] = { ...prevStation, ChosenVia: undefined };
+                                newTrip[replacedIndex - 1] = {
+                                  ...prevStation,
+                                  ChosenVia: undefined,
+                                };
                               }
                             }
-                            
+
                             return newTrip;
                           });
                           setStations(null);
@@ -275,10 +292,12 @@ export default function NextStationSelector() {
         onClick={() => {}}
         disabled={
           trip.filter((t) => t).length < 2 ||
-          validTrip.filter((v) => v !== null).length != trip.filter((t) => t).length - 1
+          validTrip.filter((v) => v !== null).length !=
+            trip.filter((t) => t).length - 1
         }
         pophover={
-          validTrip.filter((v) => v !== null).length != trip.filter((t) => t).length - 1
+          validTrip.filter((v) => v !== null).length !=
+          trip.filter((t) => t).length - 1
             ? "Please choose your connexions"
             : "Please put a trip with at least 2 stations"
         }
