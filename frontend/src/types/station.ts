@@ -3,4 +3,5 @@ export interface Station {
   UIDs: string[];
   Lines: string[];
   Routes: string[];
+  ChosenVia?: number;
 }
