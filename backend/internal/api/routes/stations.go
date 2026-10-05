@@ -32,6 +32,8 @@ func init() {
 			var stations []database.Station
 			res := db.Find(&stations)
 
+			var resStations []database.Station
+
 			if res.Error != nil {
 				c.Status(http.StatusInternalServerError)
 				fmt.Println(res.Error)
@@ -45,7 +47,7 @@ func init() {
 				var station *database.Station
 				for i := range stations {
 					s := &stations[i]
-					
+
 					var uids []string
 					if err := json.Unmarshal(s.UIDs, &uids); err == nil {
 						for _, uid := range uids {
@@ -89,16 +91,25 @@ func init() {
 					}
 				}
 
-				c.JSON(http.StatusOK, gin.H{
-					"total":  len(possibleStations),
-					"result": possibleStations,
-				})
+				resStations = possibleStations
 			} else {
-				c.JSON(http.StatusOK, gin.H{
-					"total":  len(stations),
-					"result": stations,
-				})
+				resStations = stations
 			}
+
+			var lines []database.Line
+			res = db.Find(&lines)
+
+			if res.Error != nil {
+				c.Status(http.StatusInternalServerError)
+				fmt.Println("cannot get lines ", res.Error)
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"total":  len(resStations),
+				"lines":  lines,
+				"result": resStations,
+			})
 		},
 	})
 }
