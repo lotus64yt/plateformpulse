@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import NextStationSelector from "@/components/NextStationSelector";
 import IntroScreen from "@/components/IntroScreen";
 
 export default function Home() {
   const [showIntro, setShowIntro] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("trip=")) {
+      setShowIntro(false);
+    }
+  }, []);
 
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-900 font-sans min-h-screen">

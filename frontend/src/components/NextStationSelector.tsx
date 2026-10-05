@@ -26,28 +26,32 @@ export default function NextStationSelector() {
   const [trip, setTrip] = useState<(Station | null)[]>([null]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [lines, setLines] = useState<Line[]>([]);
-  const [validTrip, setValidTrip] = useState<ValidTripStep[]>([]);
+  const [validTrip, setValidTrip] = useState<(ValidTripStep | null)[]>([]);
 
-  const toValidTrip = (trip: Station[]): ValidTripStep[] => {
-    const vTrip: ValidTripStep[] = [];
+  const toValidTrip = (trip: Station[]): (ValidTripStep | null)[] => {
+    const vTrip: (ValidTripStep | null)[] = [];
 
     trip.forEach((station, index) => {
+      if (index === trip.length - 1) return;
+
       const connexions = station?.Lines.filter((lineName) =>
         trip[index + 1]?.Lines.includes(lineName),
       );
 
-      if (connexions.length == 1) {
+      if (connexions && connexions.length == 1) {
         vTrip.push({
           from: station.UIDs[0],
           to: trip[index + 1].UIDs[0],
           via: connexions[0],
         });
-      } else if (station.ChosenVia != null) {
+      } else if (station.ChosenVia != null && connexions && connexions.length > station.ChosenVia) {
         vTrip.push({
           from: station.UIDs[0],
           to: trip[index + 1].UIDs[0],
           via: connexions[station.ChosenVia],
         });
+      } else {
+        vTrip.push(null);
       }
     });
 
@@ -72,6 +76,21 @@ export default function NextStationSelector() {
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tripParam = params.get("trip");
+    if (tripParam) {
+      try {
+        const decoded = JSON.parse(decodeURIComponent(atob(tripParam)));
+        if (Array.isArray(decoded)) {
+          setTrip(decoded);
+        }
+      } catch (e) {
+        console.error("fail to parse url", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (stations == null) {
       fetchPossibleStation(trip[trip.length - 2]?.UIDs[0] ?? "").then(
         (list) => {
@@ -83,6 +102,20 @@ export default function NextStationSelector() {
 
     if (trip) {
       setValidTrip(toValidTrip(trip.filter((s): s is Station => s !== null)));
+      
+      const url = new URL(window.location.href);
+      if (trip.length === 1 && trip[0] === null) {
+        if (url.searchParams.has("trip")) {
+          url.searchParams.delete("trip");
+          window.history.replaceState(null, "", url.toString());
+        }
+      } else {
+        const encoded = btoa(encodeURIComponent(JSON.stringify(trip)));
+        if (url.searchParams.get("trip") !== encoded) {
+          url.searchParams.set("trip", encoded);
+          window.history.replaceState(null, "", url.toString());
+        }
+      }
     }
   }, [JSON.stringify(trip)]);
 
@@ -93,7 +126,7 @@ export default function NextStationSelector() {
       </h1>
       {trip.map((station, index) => (
         <div
-          key={station?.UIDs[0] ?? `empty-station-${index}`}
+          key={(station?.UIDs[0] || "")+index}
           className="relative w-[90%]"
         >
           <div
@@ -155,11 +188,22 @@ export default function NextStationSelector() {
                         key={i}
                         className="cursor-pointer"
                         onClick={() => {
-                          setTrip((currentTrip) => [
-                            ...currentTrip.slice(0, -1),
-                            s,
-                            null,
-                          ]);
+                          setTrip((currentTrip) => {
+                            const newTrip = [...currentTrip];
+                            
+                            const replacedIndex = currentTrip.length - 1;
+                            newTrip[replacedIndex] = s;
+                            newTrip.push(null);
+
+                            if (replacedIndex > 0) {
+                              const prevStation = newTrip[replacedIndex - 1];
+                              if (prevStation) {
+                                newTrip[replacedIndex - 1] = { ...prevStation, ChosenVia: undefined };
+                              }
+                            }
+                            
+                            return newTrip;
+                          });
                           setStations(null);
                           setShowPossibleStation(false);
                           setSearchQuery("");
@@ -182,12 +226,13 @@ export default function NextStationSelector() {
                 const connexions = station.Lines.filter((lineName) =>
                   trip[index + 1]?.Lines.includes(lineName),
                 );
-                let connexionChoosed = connexions.length > 1 ? false : true;
+                const hasValidVia = validTrip[index] != null;
+                const chosenViaLine = validTrip[index]?.via;
 
                 return (
                   <div className="flex items-center gap-1 mt-3">
                     <div className="ml-3 h-10 w-0 border border-dashed border-white" />
-                    {connexionChoosed || validTrip[index]?.via ? (
+                    {hasValidVia ? (
                       <p className="ml-2">Via :</p>
                     ) : (
                       <p className="ml-2">Select your connexion :</p>
@@ -204,14 +249,11 @@ export default function NextStationSelector() {
                                   : currentStation,
                               ),
                             );
-
-                            connexionChoosed = true;
                           }}
                           key={lineIndex}
                           className={cn(
                             connexions.length == 1 ? "" : "cursor-pointer",
-                            validTrip[index]?.via &&
-                              validTrip[index]?.via === lineName
+                            chosenViaLine === lineName
                               ? "bg-zinc-700 rounded-md"
                               : "",
                           )}
@@ -233,10 +275,10 @@ export default function NextStationSelector() {
         onClick={() => {}}
         disabled={
           trip.filter((t) => t).length < 2 ||
-          validTrip.length != trip.filter((t) => t).length - 1
+          validTrip.filter((v) => v !== null).length != trip.filter((t) => t).length - 1
         }
         pophover={
-          validTrip.length != trip.filter((t) => t).length - 1
+          validTrip.filter((v) => v !== null).length != trip.filter((t) => t).length - 1
             ? "Please choose your connexions"
             : "Please put a trip with at least 2 stations"
         }
