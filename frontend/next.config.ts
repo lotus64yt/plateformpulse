@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  images: {
+    domains: ["data.iledefrance-mobilites.fr"],
+  },
 };
 
 export default nextConfig;
