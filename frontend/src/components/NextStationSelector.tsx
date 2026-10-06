@@ -13,13 +13,17 @@ interface StationRes {
   total: number;
 }
 
-interface ValidTripStep {
+export interface ValidTripStep {
   from: string;
   to: string;
   via: string | null | false;
 }
 
-export default function NextStationSelector() {
+export default function NextStationSelector({
+  onContinue,
+}: {
+  onContinue: () => void;
+}) {
   const [showPossibleStation, setShowPossibleStation] =
     useState<boolean>(false);
   const [stations, setStations] = useState<Station[] | null | false>(null);
@@ -289,7 +293,7 @@ export default function NextStationSelector() {
       ))}
 
       <ContinueButton
-        onClick={() => {}}
+        onClick={onContinue}
         disabled={
           trip.filter((t) => t).length < 2 ||
           validTrip.filter((v) => v !== null).length !=
