@@ -26,7 +26,7 @@ func StartApi(db *gorm.DB) *gin.Engine {
 		}
 	}
 
-	router.Run(":3001")
+	router.Run(":4088")
 
 	return router
 }
