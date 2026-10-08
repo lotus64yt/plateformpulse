@@ -7,8 +7,9 @@ import NextStationSelector, {
 } from "@/components/NextStationSelector";
 import IntroScreen from "@/components/IntroScreen";
 import DateRangeSelector from "@/components/DateRangeSelector";
-import { Loader } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { Station } from "@/types/station";
+import { compressBase64, textToBase64 } from "@/utils/zlib";
 
 interface TimeSlot {
   start: string;
@@ -23,6 +24,22 @@ interface WrappedData {
   TimeSlots: TimeSlot[];
 }
 
+export interface WrappedResponse {
+  wrapped_title: string;
+  scenes: WrappedScene[];
+}
+
+export type WrappedSceneType = "intro" | "stat" | "outro";
+
+export interface WrappedScene {
+  id: number;
+  type: WrappedSceneType;
+  title: string;
+  subtitle: string;
+  highlight: string;
+  emoji: string;
+}
+
 export default function Home() {
   const [step, setStep] = useState<number>(0);
 
@@ -33,14 +50,22 @@ export default function Home() {
     const to = url.searchParams.get("to");
     const daysStr = url.searchParams.get("days");
     const slotsStr = url.searchParams.get("slots");
-    
+
     if (!tripData || !from || !to) {
       return null;
     }
 
-    const days = daysStr ? daysStr.split(",").map(Number).filter(n => !isNaN(n)) : [1, 2, 3, 4, 5];
-    let timeSlots: TimeSlot[] = [{ start: "08:00", end: "09:00" }, { start: "17:00", end: "18:00" }];
-    
+    const days = daysStr
+      ? daysStr
+          .split(",")
+          .map(Number)
+          .filter((n) => !isNaN(n))
+      : [1, 2, 3, 4, 5];
+    let timeSlots: TimeSlot[] = [
+      { start: "08:00", end: "09:00" },
+      { start: "17:00", end: "18:00" },
+    ];
+
     if (slotsStr) {
       try {
         const parsed = JSON.parse(slotsStr);
@@ -94,7 +119,7 @@ export default function Home() {
       const cleanTrip = tripDecoded.filter((s): s is Station => s !== null);
       const validTrip = toValidTrip(cleanTrip);
 
-      if (validTrip.some(step => step === null) || validTrip.length === 0) {
+      if (validTrip.some((step) => step === null) || validTrip.length === 0) {
         return null;
       }
 
@@ -134,7 +159,15 @@ export default function Home() {
       fetch(`/api/wrapped`, {
         method: "POST",
         body: JSON.stringify(data),
-      });
+      })
+        .then((res) => {
+          return res.json();
+        })
+        .then((body: WrappedResponse) => {
+          const compressed = compressBase64(textToBase64(JSON.stringify(body)));
+
+          window.location.href = `/wrapped?data=${compressed}`;
+        });
     }
   }, [step]);
 
@@ -165,15 +198,7 @@ export default function Home() {
           </motion.main>
         )}
         {step == 3 && (
-          <motion.main
-            key="main"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="flex flex-1 w-full max-w-3xl flex-col items-center py-32 px-16"
-          >
-            <Loader />
-          </motion.main>
+          <LoaderCircle className="animate-spin text-white size-20" />
         )}
       </AnimatePresence>
     </div>
