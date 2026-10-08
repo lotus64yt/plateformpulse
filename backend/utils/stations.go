@@ -1,6 +1,10 @@
 package utils
 
-import "strings"
+import (
+	"encoding/json"
+	"plateformpulse/internal/database"
+	"strings"
+)
 
 func StationNameNormalize(name string) string {
 	return strings.Title(strings.TrimSpace(name))
@@ -24,4 +28,20 @@ func ExtractTrainNumber(ref string) string {
 		}
 	}
 	return ref
+}
+
+func FindStation(stations []database.Station, uid string) (database.Station, bool) {
+	for _, s := range stations {
+		var uids []string
+		if err := json.Unmarshal(s.UIDs, &uids); err != nil {
+			continue
+		}
+		for _, stationUID := range uids {
+			if stationUID == uid {
+				return s, true
+			}
+		}
+	}
+
+	return database.Station{}, false
 }
