@@ -1,0 +1,18 @@
+{
+  "$schema": "https://orionhost.xyz/cli.schema.json",
+  "deploy": {
+    "clean": true,
+    "exclude": [
+      "node_modules",
+      "dist",
+      ".git",
+      "*.log",
+      "frontend/.next",
+      "frontend/node_modules",
+      "frontend/src",
+      "backend/internal",
+      "backend/utils",
+      "backend/cmds"
+    ]
+  }
+}

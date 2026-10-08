@@ -1,2 +1,6 @@
 database.sqlite
 .env
+node_modules
+# Orion CLI
+.orion/
+plateformpulse
