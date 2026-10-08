@@ -5,6 +5,7 @@ Here you go plateformpulse, a simple website that will give you the statistics o
 
 ## Playable demo
 
+<video src="medias/preview.mp4" controls></video>
 You can try the demo here: [https://plateformpulse.orionhost.app](https://plateformpulse.orionhost.app)
 
 ## Installation

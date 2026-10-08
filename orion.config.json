@@ -12,7 +12,8 @@
       "frontend/src",
       "backend/internal",
       "backend/utils",
-      "backend/cmds"
+      "backend/cmds",
+      "medias"
     ]
   }
 }
